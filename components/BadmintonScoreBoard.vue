@@ -4,8 +4,8 @@
       <div class="border-white border-r-4 flex flex-col justify-center items-center gap-6 relative">
         <span
           class="absolute right-5 top-[50%] -translate-y-[50%] flex items-center justify-center cursor-pointer"
+          @click="switchPlace('A')"
         >
-          <!-- @click="switchPlace('A')" -->
           <MoveVertical class="w-10 h-10" />
         </span>
         <div class="flex text-4xl">
@@ -26,8 +26,8 @@
       <div class="border-white border-l-4 flex flex-col justify-center items-center gap-6 relative">
         <span
           class="absolute left-5 top-[50%] -translate-y-[50%] flex items-center justify-center cursor-pointer"
+          @click="switchPlace('B')"
         >
-          <!-- @click="switchPlace('B')" -->
           <MoveVertical class="w-10 h-10" />
         </span>
         <div class="flex text-4xl">
@@ -65,9 +65,7 @@
           <span class="m-auto flex items-center gap-2">
             <label for="score">最高分</label>
             <select v-model="maxScore" placeholder="請選擇">
-              <option value="1">11</option>
-              <option value="2">21</option>
-              <option value="3">25</option>
+              <option v-for="score in scoreOptions" :key="score" :value="score">{{ score }}</option>
             </select>
           </span>
           <span class="m-auto flex items-center gap-2">
@@ -124,18 +122,21 @@
 import { MoveVertical } from 'lucide-vue-next'
 
 const isSettingOpen = ref(true)
-const maxScore = ref('2')
+const gameIsStart = ref(false)
+const maxScore = ref(21)
 const playerPerTeam = ref('2')
 const lastGetScoreTeam = ref<team>(undefined)
 const currentTeam = ref<team>(undefined)
+// 定義得分選項
+const scoreOptions = ref([11, 21, 25])
 
 type team = 'A' | 'B' | undefined
 
 // reactive 用於物件類型
 const teamA = reactive({
   msg: 0,
-  playerA: '雷俊龍',
-  playerB: '林君潔',
+  playerA: '',
+  playerB: '',
   evenPlace: '',
   oddPlace: '',
   score: 0,
@@ -143,8 +144,8 @@ const teamA = reactive({
 
 const teamB = reactive({
   msg: 0,
-  playerA: '張人天',
-  playerB: '唐允強',
+  playerA: '',
+  playerB: '',
   evenPlace: '',
   oddPlace: '',
   score: 0,
@@ -154,6 +155,7 @@ const teamB = reactive({
 const initGame = () => {
   isSettingOpen.value = false
   randomStart()
+  gameIsStart.value = true
 }
 
 const randomStart = () => {
@@ -177,44 +179,52 @@ const randomStart = () => {
   }
 }
 
-// const switchPlace = (team: 'A' | 'B') => {}
+const switchPlace = (team: team) => {
+  if (!gameIsStart.value) return alert('請先開始比賽')
+  if (!team) return console.error('team is undefined')
+  if (team === 'A') {
+    const originEvenPlayer = teamA.evenPlace
+    const originOddPlayer = teamA.oddPlace
+    teamA.evenPlace = originOddPlayer
+    teamA.oddPlace = originEvenPlayer
+  } else {
+    const originEvenPlayer = teamB.evenPlace
+    const originOddPlayer = teamB.oddPlace
+    teamB.evenPlace = originOddPlayer
+    teamB.oddPlace = originEvenPlayer
+  }
+}
 
 const getScore = (team: team) => {
+  if (!gameIsStart.value) return alert('請先開始比賽')
   if (!team) return console.error('team is undefined')
 
   if (team === 'A') {
     teamA.score++
     currentTeam.value = 'A'
-
-    if (lastGetScoreTeam.value === 'A') {
-      const originEvenPlayer = teamA.evenPlace
-      const originOddPlayer = teamA.oddPlace
-      teamA.evenPlace = originOddPlayer
-      teamA.oddPlace = originEvenPlayer
-    }
-
+    switchPlace('A')
     lastGetScoreTeam.value = 'A'
   } else {
     teamB.score++
     currentTeam.value = 'B'
-
-    if (lastGetScoreTeam.value === 'B') {
-      const originEvenPlayer = teamB.evenPlace
-      const originOddPlayer = teamB.oddPlace
-      teamB.evenPlace = originOddPlayer
-      teamB.oddPlace = originEvenPlayer
-    }
-
+    switchPlace('B')
     lastGetScoreTeam.value = 'B'
   }
 
-  // if (teamA.score >= maxScore.value) {
-  //   alert(`${teamA.playerA} & ${teamA.playerB} 贏了！`)
-  //   initGame()
-  // } else if (teamB.score >= maxScore.value) {
-  //   alert(`${teamB.playerA} & ${teamB.playerB} 贏了！`)
-  //   initGame()
-  // }
+  if (teamA.score >= Number(maxScore.value) && teamA.score - teamB.score >= 2) {
+    alert(`${teamA.playerA} & ${teamA.playerB} 贏了！`)
+    gameIsStart.value = false
+    // initGame()
+  } else if (teamB.score >= Number(maxScore.value) && teamB.score - teamA.score >= 2) {
+    alert(`${teamB.playerA} & ${teamB.playerB} 贏了！`)
+    gameIsStart.value = false
+    // initGame()
+  } else if (
+    teamA.score >= Number(maxScore.value) - 1 &&
+    teamB.score >= Number(maxScore.value) - 1
+  ) {
+    alert('Deuce! 雙方進入延長賽，需領先2分才可獲勝！')
+  }
 }
 </script>
 
@@ -286,7 +296,7 @@ select {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   appearance: none; // Removes default browser styling
   background-color: white;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a 1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px; // Space for the custom arrow
